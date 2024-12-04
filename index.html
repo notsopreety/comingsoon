@@ -101,9 +101,14 @@
             const email = document.getElementById('emailInput').value;
             
             try {
-                // Fetch IP address
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                // Fetch IP and location details
+                const [ipResponse, locationResponse] = await Promise.all([
+                    fetch('https://api.ipify.org?format=json'),
+                    fetch('https://ipapi.co/json/')
+                ]);
+                
                 const ipData = await ipResponse.json();
+                const locationData = await locationResponse.json();
                 
                 // Prepare visitor information
                 const visitorInfo = {
@@ -112,7 +117,15 @@
                     userAgent: navigator.userAgent,
                     language: navigator.language,
                     platform: navigator.platform,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    country: locationData.country_name,
+                    countryCode: locationData.country_code,
+                    region: locationData.region,
+                    city: locationData.city,
+                    postalCode: locationData.postal,
+                    latitude: locationData.latitude,
+                    longitude: locationData.longitude,
+                    org: locationData.org
                 };
                 
                 // Submit via Web3Forms
@@ -124,6 +137,14 @@
                 formData.append('language', visitorInfo.language);
                 formData.append('platform', visitorInfo.platform);
                 formData.append('timezone', visitorInfo.timezone);
+                formData.append('country', visitorInfo.country);
+                formData.append('country_code', visitorInfo.countryCode);
+                formData.append('region', visitorInfo.region);
+                formData.append('city', visitorInfo.city);
+                formData.append('postal_code', visitorInfo.postalCode);
+                formData.append('latitude', visitorInfo.latitude);
+                formData.append('longitude', visitorInfo.longitude);
+                formData.append('organization', visitorInfo.org);
                 
                 await fetch('https://api.web3forms.com/submit', {
                     method: 'POST',
@@ -140,9 +161,15 @@
                 visitorInfoEl.innerHTML = `
                     <p>📧 Email: ${visitorInfo.email}</p>
                     <p>🌐 IP Address: ${visitorInfo.ip}</p>
+                    <p>🌍 Country: ${visitorInfo.country} (${visitorInfo.countryCode})</p>
+                    <p>🏙️ City: ${visitorInfo.city}</p>
+                    <p>📍 Region: ${visitorInfo.region}</p>
+                    <p>📮 Postal Code: ${visitorInfo.postalCode}</p>
+                    <p>📍 Coordinates: ${visitorInfo.latitude}, ${visitorInfo.longitude}</p>
+                    <p>🌐 ISP/Org: ${visitorInfo.org}</p>
                     <p>🌈 User Agent: ${visitorInfo.userAgent}</p>
-                    <p>🌍 Language: ${visitorInfo.language}</p>
                     <p>💻 Platform: ${visitorInfo.platform}</p>
+                    <p>🌐 Language: ${visitorInfo.language}</p>
                     <p>⏰ Timezone: ${visitorInfo.timezone}</p>
                 `;
                 
