@@ -10,42 +10,42 @@
             background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
             overflow: hidden;
         }
-
         .floating-element {
             position: absolute;
             background: rgba(255,255,255,0.1);
             border-radius: 50%;
             animation: float-animation 10s infinite alternate;
         }
-
         @keyframes float-animation {
             0% { transform: translateY(0) rotate(0deg); }
             100% { transform: translateY(-50px) rotate(360deg); }
         }
-
         .notify-form {
             backdrop-filter: blur(10px);
             background: rgba(255,255,255,0.2);
             border: 1px solid rgba(255,255,255,0.3);
         }
-
         .input-glow:focus {
             box-shadow: 0 0 15px rgba(37, 117, 252, 0.6);
             border-color: #2575fc;
         }
-
         @keyframes pulse-animation {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.05); }
         }
-
         .pulse-button {
             transition: all 0.3s;
             animation: pulse-animation 2s infinite;
         }
-
         .pulse-button:hover {
             transform: scale(1.1);
+        }
+        #successMessage {
+            display: none;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -54,44 +54,103 @@
     <div class="floating-element w-64 h-64 top-10 left-20 opacity-20"></div>
     <div class="floating-element w-96 h-96 bottom-20 right-10 opacity-10"></div>
     <div class="floating-element w-32 h-32 top-1/2 left-1/3 opacity-15"></div>
-
+    
     <div class="container mx-auto px-4 z-10 relative text-center">
-        <h1 class="text-5xl md:text-6xl font-bold mb-6 transform transition-all duration-700 hover:scale-105">
-            COMING <span class="text-yellow-300">SOON</span>
-        </h1>
+        <div id="formContainer">
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 transform transition-all duration-700 hover:scale-105">
+                COMING <span class="text-yellow-300">SOON</span>
+            </h1>
+            
+            <p class="text-xl md:text-2xl mb-10 max-w-2xl mx-auto opacity-80">
+                We're working hard to bring something incredible. 
+                Stay tuned and be the first to know when we launch!
+            </p>
+            <form 
+                id="notifyForm"
+                class="notify-form max-w-md mx-auto p-6 rounded-xl shadow-2xl"
+            >
+                <input 
+                    type="email" 
+                    id="emailInput"
+                    name="email" 
+                    placeholder="Enter your email" 
+                    required 
+                    class="input-glow w-full p-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-white focus:outline-none mb-4"
+                >
+                <button 
+                    type="submit" 
+                    class="pulse-button w-full bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition-all"
+                >
+                    Notify Me
+                </button>
+            </form>
+        </div>
         
-        <p class="text-xl md:text-2xl mb-10 max-w-2xl mx-auto opacity-80">
-            We're working hard to bring something incredible. 
-            Stay tuned and be the first to know when we launch!
-        </p>
-
-        <form 
-            action="https://api.web3forms.com/submit" 
-            method="POST" 
-            class="notify-form max-w-md mx-auto p-6 rounded-xl shadow-2xl"
-        >
-            <input type="hidden" name="access_key" value="9154ff52-22b2-4f18-a5fb-8bdf249f0d50">
-            <input 
-                type="email" 
-                name="email" 
-                placeholder="Enter your email" 
-                required 
-                class="input-glow w-full p-3 rounded-lg bg-white bg-opacity-20 border border-white border-opacity-30 text-white placeholder-white focus:outline-none mb-4"
-            >
-            <input 
-                type="hidden" 
-                name="redirect" 
-                value="https://web3forms.com/success"
-            >
-            <button 
-                type="submit" 
-                class="pulse-button w-full bg-yellow-400 text-black font-bold py-3 rounded-lg hover:bg-yellow-500 transition-all"
-            >
-                Notify Me
-            </button>
-        </form>
+        <div id="successMessage" class="max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-4">We Got You!</h2>
+            <p class="mb-4">Thanks for your interest. We'll keep you updated.</p>
+            <div id="visitorInfo" class="text-sm opacity-80 text-left"></div>
+        </div>
     </div>
 
-    <script src="https://web3forms.com/client/script.js" async></script>
+    <script>
+        document.getElementById('notifyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Get email
+            const email = document.getElementById('emailInput').value;
+            
+            try {
+                // Fetch IP address
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                
+                // Prepare visitor information
+                const visitorInfo = {
+                    email: email,
+                    ip: ipData.ip,
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                };
+                
+                // Submit via Web3Forms
+                const formData = new FormData();
+                formData.append('access_key', '9154ff52-22b2-4f18-a5fb-8bdf249f0d50');
+                formData.append('email', email);
+                formData.append('ip', visitorInfo.ip);
+                formData.append('user_agent', visitorInfo.userAgent);
+                formData.append('language', visitorInfo.language);
+                formData.append('platform', visitorInfo.platform);
+                formData.append('timezone', visitorInfo.timezone);
+                
+                await fetch('https://api.web3forms.com/submit', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Hide form, show success message
+                document.getElementById('formContainer').style.display = 'none';
+                const successMessage = document.getElementById('successMessage');
+                successMessage.style.display = 'block';
+                
+                // Display visitor info
+                const visitorInfoEl = document.getElementById('visitorInfo');
+                visitorInfoEl.innerHTML = `
+                    <p>📧 Email: ${visitorInfo.email}</p>
+                    <p>🌐 IP Address: ${visitorInfo.ip}</p>
+                    <p>🌈 User Agent: ${visitorInfo.userAgent}</p>
+                    <p>🌍 Language: ${visitorInfo.language}</p>
+                    <p>💻 Platform: ${visitorInfo.platform}</p>
+                    <p>⏰ Timezone: ${visitorInfo.timezone}</p>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+            }
+        });
+    </script>
 </body>
 </html>
